@@ -35,12 +35,9 @@ class ViewController: UIViewController {
         model.fetchData { success in
             DispatchQueue.main.async { [self] in
                 if success {
-                    if let result = model.chart?.result[0] {
-                        symbolLabel.text = result.meta.symbol
-                        priceLabel.text = String(format: "\(result.meta.currency) $%.2f", result.meta.regularMarketPrice)
-                        variationTable.reloadData()
-                        fillGraph()
-                    }
+                    model.fillTexts(symbolLabel, priceLabel)
+                    variationTable.reloadData()
+                    fillGraph()
                 }
                 else {
                     let alert = UIAlertController(title: "Data not found", message: "Data not found, please try again at a later time.", preferredStyle: .alert)
@@ -59,33 +56,11 @@ extension ViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "variationCell", for: indexPath) as? TableViewCell
+        guard var cell = tableView.dequeueReusableCell(withIdentifier: "variationCell", for: indexPath) as? TableViewCell
         else {
             return UITableViewCell()
         }
-        
-        if let result = model.chart?.result[0] {
-            if let timestamp = result.timestamp {
-                let date = Date(timeIntervalSince1970: TimeInterval(floatLiteral: timestamp[indexPath.row]))
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateStyle = .short
-                dateFormatter.timeStyle = .none
-                dateFormatter.locale = Locale.current
-                cell.dateLabel.text = dateFormatter.string(from: date)
-            }
-            
-            if let indicators = result.indicators {
-                let closeValue = indicators.quote[0].close.reversed()[indexPath.row]
-                let openValue = indicators.quote[0].open.reversed()[indexPath.row]
-                cell.valueLabel.text = String(format: "$%.2f", openValue)
-                cell.variationLabel.text = String(format: "$%.2f", (closeValue - openValue))
-            }
-            
-            cell.dateLabel.sizeToFit()
-            cell.valueLabel.sizeToFit()
-            cell.variationLabel.sizeToFit()
-
-        }
+        model.fillCell(cell: &cell, indexPath: indexPath)
         return cell
     }
 }
@@ -113,21 +88,7 @@ extension ViewController {
         graphView.add(graph: graph)
         
         // add points
-        var points = [GraphPoint]()
-        if let closeValues = model.chart?.result[0].indicators?.quote[0].open, closeValues.count > numberOfRecords {
-            let values = Array(closeValues[closeValues.count - numberOfRecords ..< closeValues.count])
-            
-            minY = values.min() ?? minY
-            maxY = values.max() ?? maxY
-            
-            for index in 0 ..< numberOfRecords {
-                let roundedPoint = RoundedPoint(x: CGFloat(index), y: CGFloat(values[index]))
-                roundedPoint.fillColor = .white
-                roundedPoint.strokeColor = .black
-                roundedPoint.selected = false
-                points.append(roundedPoint)
-            }
-        }
+        let points = model.fillPoints(quantity: numberOfRecords, min: &minY, max: &maxY)
         graph.addData(data: points)
         
         let mod = maxY.truncatingRemainder(dividingBy: minY)

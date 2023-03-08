@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import UIKit
+import SwiftGraphKit
 
 class ViewModel {
     // MARK: - Variables
@@ -65,5 +67,60 @@ class ViewModel {
             }
         }
         
+    }
+    
+    func fillTexts(_ symbolLabel: UILabel, _ priceLabel: UILabel) {
+        if let result = chart?.result[0] {
+            symbolLabel.text = result.meta.symbol
+            priceLabel.text = String(format: "\(result.meta.currency) $%.2f", result.meta.regularMarketPrice)
+        }
+    }
+    
+    func fillCell(cell: inout TableViewCell, indexPath: IndexPath) {
+        if let result = chart?.result[0] {
+            if let timestamp = result.timestamp {
+                let date = Date(timeIntervalSince1970: TimeInterval(floatLiteral: timestamp[indexPath.row]))
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .short
+                dateFormatter.timeStyle = .none
+                dateFormatter.locale = Locale.current
+                cell.dateLabel.text = dateFormatter.string(from: date)
+            }
+            
+            if let indicators = result.indicators, indicators.quote.count > 0 {
+                let openValues:[Double] = indicators.quote[0].open.reversed()
+                let openValue = openValues[indexPath.row]
+                
+                cell.valueLabel.text = String(format: "$%.2f", openValue)
+                cell.variationLabel.text = indexPath.row - 1 >= 0 ? String(format: "$%.2f", ((openValues[indexPath.row] - openValues[indexPath.row - 1]))) : "-"
+                cell.variationFirstLabel.text = String(format: "$%.2f", ((openValues[indexPath.row] - openValues[29])))
+            }
+            
+            cell.dateLabel.sizeToFit()
+            cell.valueLabel.sizeToFit()
+            cell.variationLabel.sizeToFit()
+            cell.variationFirstLabel.sizeToFit()
+        }
+    }
+    
+    func fillPoints(quantity: Int, min: inout Double, max: inout Double) -> [GraphPoint] {
+        var points = [GraphPoint]()
+        if let result = chart?.result[0],
+            let closeValues = result.indicators?.quote[0].open,
+            closeValues.count > quantity {
+            let values = Array(closeValues[closeValues.count - quantity ..< closeValues.count])
+            
+            min = values.min() ?? min
+            max = values.max() ?? max
+            
+            for index in 0 ..< quantity {
+                let roundedPoint = RoundedPoint(x: CGFloat(index), y: CGFloat(values[index]))
+                roundedPoint.fillColor = .white
+                roundedPoint.strokeColor = .black
+                roundedPoint.selected = false
+                points.append(roundedPoint)
+            }
+        }
+        return points
     }
 }

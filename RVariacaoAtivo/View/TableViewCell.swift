@@ -15,4 +15,6 @@ class TableViewCell: UITableViewCell {
     @IBOutlet weak var valueLabel: UILabel!
     
     @IBOutlet weak var variationLabel: UILabel!
+    
+    @IBOutlet weak var variationFirstLabel: UILabel!
 }
