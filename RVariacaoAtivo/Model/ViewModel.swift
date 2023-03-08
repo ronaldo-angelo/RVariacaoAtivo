@@ -92,8 +92,8 @@ class ViewModel {
                 let openValue = openValues[indexPath.row]
                 
                 cell.valueLabel.text = String(format: "$%.2f", openValue)
-                cell.variationLabel.text = indexPath.row - 1 >= 0 ? String(format: "$%.2f", ((openValues[indexPath.row] - openValues[indexPath.row - 1]))) : "-"
-                cell.variationFirstLabel.text = String(format: "$%.2f", ((openValues[indexPath.row] - openValues[29])))
+                cell.variationLabel.text = indexPath.row - 1 >= 0 ? calculatePercentages(value1: openValues[indexPath.row], value2: openValues[indexPath.row - 1]) : "-"
+                cell.variationFirstLabel.text = calculatePercentages(value1: openValues[indexPath.row], value2: openValues[29])
             }
             
             cell.dateLabel.sizeToFit()
@@ -122,5 +122,10 @@ class ViewModel {
             }
         }
         return points
+    }
+    
+    func calculatePercentages(value1: Double, value2: Double) -> String {
+        let percentValue = ((value1 - value2) * 100) / value2
+        return String(format: "%.1f%%", percentValue)
     }
 }
